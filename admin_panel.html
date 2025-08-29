@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Function Generator - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-input {
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            box-shadow: 0 0 0 2px #f59e0b;
+            border-color: #fbbf24;
+        }
+        .code-output {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="text-center mb-10 relative">
+             <a href="./index.html" class="absolute top-0 left-0 text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors">
+                &larr; Back to Home
+            </a>
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Function Generator</h1>
+            <p class="mt-4 text-lg text-slate-600">Create the JSON for a new ETL function. Fill out the form, generate the JSON, and copy it into the main application's script.</p>
+        </header>
+
+        <main class="bg-white p-8 rounded-xl shadow-md border border-slate-200">
+            <form id="function-form" class="space-y-6">
+                <div>
+                    <label for="function-name" class="block text-sm font-medium text-slate-700 mb-1">Function Name</label>
+                    <input type="text" id="function-name" placeholder="e.g., add_audit_columns" required class="form-input w-full p-2 border border-slate-300 rounded-md">
+                </div>
+                
+                <div>
+                    <label for="function-id" class="block text-sm font-medium text-slate-700 mb-1">Function ID</label>
+                    <input type="number" id="function-id" placeholder="e.g., 40 (must be unique)" required class="form-input w-full p-2 border border-slate-300 rounded-md">
+                </div>
+
+                <div>
+                    <label for="function-category" class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                    <select id="function-category" required class="form-input w-full p-2 border border-slate-300 rounded-md">
+                        <option value="Data Cleansing & Quality">Data Cleansing & Quality</option>
+                        <option value="Data Transformation & Enrichment">Data Transformation & Enrichment</option>
+                        <option value="Schema & Data Structure Manipulation">Schema & Data Structure Manipulation</option>
+                        <option value="Date & Time Functions">Date & Time Functions</option>
+                        <option value="Auditing, Lineage & Utilities">Auditing, Lineage & Utilities</option>
+                        <option value="Advanced & Specialized Functions">Advanced & Specialized Functions</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="function-type" class="block text-sm font-medium text-slate-700 mb-1">Function Type</label>
+                    <select id="function-type" required class="form-input w-full p-2 border border-slate-300 rounded-md">
+                        <option value="PySpark (Function)">PySpark (Function)</option>
+                        <option value="Spark SQL / PySpark">Spark SQL / PySpark</option>
+                        <option value="PySpark (UDF)">PySpark (UDF)</option>
+                        <option value="PySpark Streaming">PySpark Streaming</option>
+                        <option value="PySpark Read Option">PySpark Read Option</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="function-description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea id="function-description" rows="3" placeholder="A brief, one-sentence description of what the function does." required class="form-input w-full p-2 border border-slate-300 rounded-md"></textarea>
+                </div>
+
+                <div>
+                    <label for="function-code" class="block text-sm font-medium text-slate-700 mb-1">Implementation Code</label>
+                    <textarea id="function-code" rows="8" placeholder="Paste the complete, runnable function code here." required class="form-input w-full p-2 border border-slate-300 rounded-md font-mono text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label for="function-example" class="block text-sm font-medium text-slate-700 mb-1">Example Usage Code</label>
+                    <textarea id="function-example" rows="8" placeholder="Paste a clear, well-commented example of how to use the function." required class="form-input w-full p-2 border border-slate-300 rounded-md font-mono text-sm"></textarea>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="bg-amber-500 text-white py-3 px-6 rounded-lg font-semibold shadow-md hover:bg-amber-600 transition-colors">Generate JSON</button>
+                </div>
+            </form>
+
+            <div id="output-section" class="mt-10 hidden">
+                <h2 class="text-2xl font-bold text-center mb-4">Generated JSON</h2>
+                <p class="text-center text-slate-600 mb-6">Copy the code below and add it to the `functions` array within the correct category in the main application's JavaScript.</p>
+                <div class="relative">
+                    <pre id="json-output" class="code-output"></pre>
+                    <button id="copy-btn" class="absolute top-2 right-2 bg-slate-600 text-white text-xs font-semibold py-1 px-3 rounded-md hover:bg-slate-700">Copy</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('function-form');
+            const outputSection = document.getElementById('output-section');
+            const jsonOutput = document.getElementById('json-output');
+            const copyBtn = document.getElementById('copy-btn');
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const newFunction = {
+                    id: parseInt(document.getElementById('function-id').value, 10),
+                    name: document.getElementById('function-name').value.trim(),
+                    description: document.getElementById('function-description').value.trim(),
+                    type: document.getElementById('function-type').value,
+                    code: document.getElementById('function-code').value.trim(),
+                    example: document.getElementById('function-example').value.trim()
+                };
+                
+                // For direct pasting into the array, we need to format it nicely.
+                let jsonString = JSON.stringify(newFunction, null, 4);
+
+                // A bit of formatting to make it look exactly like the existing objects.
+                // This replaces escaped newlines in the code/example with real newlines for readability.
+                jsonString = jsonString.replace(/\\n/g, '\n');
+                
+                jsonOutput.textContent = jsonString;
+                outputSection.classList.remove('hidden');
+            });
+
+            copyBtn.addEventListener('click', () => {
+                // We need to use a temporary textarea to preserve formatting for clipboard copy
+                const textarea = document.createElement('textarea');
+                textarea.value = jsonOutput.textContent;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    copyBtn.textContent = 'Error';
+                }
+                document.body.removeChild(textarea);
+            });
+        });
+    </script>
+</body>
+</html>
+

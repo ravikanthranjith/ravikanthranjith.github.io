@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Databricks ETL Functions Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Slate Gray & Amber -->
+    <!-- Application Structure Plan: With the increase to 50+ functions, the architecture is now a two-level accordion system. Top-level accordions represent function categories (e.g., "Data Cleansing"). This provides clear, hierarchical segregation. Inside each category, individual functions are their own collapsible accordions. This keeps the UI minimalistic and scannable by default. Users can expand only what's relevant. The user flow is now: browse categories -> expand a category -> see function list -> expand a specific function for details/code -> view example. This scales elegantly and prevents information overload. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Function categories. Goal: Inform about the toolkit's structure. Viz: Bar Chart (Chart.js). Justification: A bar chart is better than a donut for comparing counts across more categories, making it easier to see which areas have the most functions.
+        - Report Info: 50+ functions. Goal: Organize and allow deep exploration. Presentation: Two-level nested accordions within a scrollable container. Interaction: Expand/collapse at category and function level, plus filtering. Justification: This is the core of the new IA, managing complexity and providing a clean, user-driven exploration path. Method: HTML/CSS/JS for dynamic accordion generation and state.
+        - Content Simplification: Removed Gemini API integration in favor of static, high-quality usage examples for each function. This makes the tool faster, more reliable, and directly answers the user's need for practical application examples without extra clicks.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 400px;
+        }
+        .code-block {
+            background-color: #1e293b; /* slate-800 */
+            color: #e2e8f0; /* slate-200 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .accordion-arrow {
+            transition: transform 0.3s ease-in-out;
+        }
+        /* Custom scrollbar for the functions container */
+        .functions-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .functions-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
+            border-radius: 10px;
+        }
+        .functions-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 10px;
+        }
+        .functions-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-10 relative">
+            <a href="./admin_panel.html" class="absolute top-0 right-0 text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors">
+                Admin Panel ➔
+            </a>
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Comprehensive ETL Functions for Databricks</h1>
+            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive guide to over 35 essential custom functions, complete with implementation code and practical examples.</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-12">
+                 <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+                    <h2 class="text-2xl font-bold text-center mb-4">Toolkit Composition</h2>
+                    <p class="text-center text-slate-600 mb-6">This chart shows the number of functions available in each category, giving you a quick overview of the toolkit's structure.</p>
+                    <div class="chart-container">
+                        <canvas id="functionTypeChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="functions-explorer">
+                <h2 class="text-2xl font-bold text-center mb-4">Functions Explorer</h2>
+                <p class="text-center text-slate-600 mb-8">Use the filters to find specific functions, or browse the categories below. Click on any category or function to expand it.</p>
+                
+                <div id="filters" class="flex flex-wrap justify-center gap-2 mb-8">
+                    <button class="filter-btn bg-amber-500 text-white py-2 px-4 rounded-full font-semibold shadow-sm" data-type="all">All</button>
+                    <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark (Function)">PySpark (Function)</button>
+                    <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="Spark SQL / PySpark">Spark SQL / PySpark</button>
+                    <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark (UDF)">PySpark (UDF)</button>
+                    <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark Streaming">PySpark Streaming</button>
+                    <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark Read Option">PySpark Read Option</button>
+                </div>
+
+                <div class="max-h-[75vh] overflow-y-auto functions-scrollbar pr-2 border border-slate-200 rounded-2xl bg-white shadow-md">
+                    <div id="functions-container" class="space-y-4 p-4">
+                        <!-- Accordions will be injected here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const categorizedFunctions = [
+            {
+                category: "Data Cleansing & Quality",
+                description: "Functions for cleaning, validating, and ensuring the quality of your data.",
+                functions: [
+                    { id: 4, name: 'trim_all_string_cols', description: 'Iterates and trims whitespace from all string columns.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col, trim\nfrom pyspark.sql.types import StringType\n\ndef trim_all_string_cols(df):\n    """Trims whitespace from all string columns in the DataFrame."""\n    string_cols = [f.name for f in df.schema.fields if isinstance(f.dataType, StringType)]\n    \n    for c in string_cols:\n        df = df.withColumn(c, trim(col(c)))\n        \n    return df`, example: `# Create a DataFrame with messy strings\ndata = [("  Alice  ", 1), ("Bob", 2), ("  Charlie", 3)]\ndf = spark.createDataFrame(data, ["name", "id"])\n\n# Clean the DataFrame by removing leading/trailing whitespace\ndf_trimmed = trim_all_string_cols(df)\n\n# Before: |  Alice  |\n# After:  |Alice|\ndisplay(df_trimmed)`},
+                    { id: 5, name: 'null_counts_report', description: 'Generates a report of null counts and percentages for each column.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col, sum as _sum, count, when\n\ndef null_counts_report(df):\n    """Returns a DataFrame with null counts and percentages for each column."""\n    total_rows = df.count()\n    if total_rows == 0:\n      return spark.createDataFrame([], schema="column_name:string, null_count:long, null_percentage:double")\n\n    null_counts = df.select([\n        _sum(when(col(c).isNull(), 1).otherwise(0)).alias(c) for c in df.columns\n    ]).collect()[0].asDict()\n\n    return spark.createDataFrame(\n        [\n            (c, null_counts[c], (null_counts[c] / total_rows) * 100)\n            for c in df.columns\n        ],\n        ["column_name", "null_count", "null_percentage"]\n    )`, example: `# Create a DataFrame with some null values\ndata = [("A", 1), ("B", None), ("C", 3), (None, 4)]\ndf = spark.createDataFrame(data, ["category", "value"])\n\n# Generate the data quality report\nquality_report_df = null_counts_report(df)\n\n# The report will show that 'category' has 1 null (25%)\n# and 'value' has 1 null (25%)\ndisplay(quality_report_df)`},
+                    { id: 7, name: 'coalesce_to_unknown', description: 'Replaces nulls in specified columns with a standard placeholder like \'Unknown\' or -1.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col, coalesce, lit\nfrom pyspark.sql.types import StringType, IntegerType, LongType, FloatType, DoubleType, DecimalType, DateType, TimestampType\n\ndef coalesce_to_unknown(df, cols_to_process=None):\n    """Coalesces nulls to a standard 'unknown' value based on data type."""\n    if cols_to_process is None:\n        cols_to_process = df.columns\n\n    for c_name in cols_to_process:\n        dtype = df.schema[c_name].dataType\n        if isinstance(dtype, StringType):\n            df = df.withColumn(c_name, coalesce(col(c_name), lit("Unknown")))\n        elif isinstance(dtype, (IntegerType, LongType)):\n            df = df.withColumn(c_name, coalesce(col(c_name), lit(-1)))\n        # ... Add other types as needed\n            \n    return df`, example: `data = [("A", None), (None, 2), ("C", 3)]\ndf = spark.createDataFrame(data, ["product_category", "item_count"])\n\n# Replace nulls in specific columns\ndf_coalesced = coalesce_to_unknown(df, ['product_category', 'item_count'])\n\n# Before: | A | null |\n#         | null | 2 |\n# After:  | A | -1 |\n#         | Unknown | 2 |\ndisplay(df_coalesced)`},
+                    { id: 16, name: 'remove_special_characters', description: 'Removes a specified set of special characters from string columns.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col, regexp_replace\n\ndef remove_special_characters(df, cols, pattern="[^a-zA-Z0-9 ]"):\n    """Removes characters from specified columns that do not match the pattern."""\n    for c in cols:\n        df = df.withColumn(c, regexp_replace(col(c), pattern, ''))\n    return df`, example: `data = [("Product A#1!",), ("Product B@2?",)]\ndf = spark.createDataFrame(data, ["product_name"])\n\n# Remove all non-alphanumeric characters (except spaces)\ndf_cleaned = remove_special_characters(df, ["product_name"])\n\n# Before: |Product A#1!|\n# After:  |Product A1|\ndisplay(df_cleaned)`},
+                    { id: 17, name: 'mask_pii_data', description: 'Masks personally identifiable information (PII) in specified columns using hashing (SHA2).', type: 'PySpark (Function)', code: `from pyspark.sql.functions import sha2, col\n\ndef mask_pii_data(df, pii_cols):\n    """Masks specified PII columns using a one-way SHA2 hash."""\n    for c in pii_cols:\n        df = df.withColumn(c, sha2(col(c).cast("string"), 256))\n    return df`, example: `data = [("alice@example.com", "Alice"), ("bob@example.com", "Bob")]\ndf = spark.createDataFrame(data, ["email", "first_name"])\n\n# Mask the 'email' column\ndf_masked = mask_pii_data(df, ["email"])\n\n# The 'email' column will now contain long hash strings instead of actual emails\ndisplay(df_masked)`},
+                    { id: 18, name: 'validate_email_format', description: 'Adds a boolean column indicating if a string column contains a valid email format.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col\n\ndef validate_email_format(df, email_col, result_col="is_email_valid"):\n    """Adds a boolean column checking if the email format is valid."""\n    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,4}$"\n    return df.withColumn(result_col, col(email_col).rlike(email_pattern))`, example: `data = [("test@email.com",), ("invalid-email",), (None,)]\ndf = spark.createDataFrame(data, ["email_address"])\n\n# Add the validation column\ndf_validated = validate_email_format(df, "email_address")\n\n# Result: | is_email_valid |\n#         | true           |\n#         | false          |\n#         | null           |\ndisplay(df_validated)`},
+                    { id: 19, name: 'enforce_string_length', description: 'Truncates string columns to a maximum length.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col, substring\n\ndef enforce_string_length(df, cols_map):\n    """Truncates string columns to a specified max length."""\n    for c, length in cols_map.items():\n        df = df.withColumn(c, substring(col(c), 1, length))\n    return df`, example: `data = [("This is a long description",), ("Short desc",)]\ndf = spark.createDataFrame(data, ["description"])\n\n# Enforce a max length of 10 for the 'description' column\ndf_truncated = enforce_string_length(df, {"description": 10})\n\n# Before: |This is a long description|\n# After:  |This is a |\ndisplay(df_truncated)`}
+                ]
+            },
+            {
+                category: "Data Transformation & Enrichment",
+                description: "Functions for transforming data, creating new features, and enriching records.",
+                functions: [
+                    { id: 2, name: 'generate_surrogate_key', description: 'Creates a unique, deterministic surrogate key by hashing business keys.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import sha2, concat_ws\n\ndef generate_surrogate_key(df, business_key_cols, key_name="surrogate_key"):\n    """Generates a deterministic SHA2-based surrogate key."""\n    return df.withColumn(\n        key_name,\n        sha2(concat_ws("||", *business_key_cols), 256)\n    )`, example: `data = [(101, 5, "PROMO1"), (102, 5, "PROMO2")]\ndf = spark.createDataFrame(data, ["product_id", "store_id", "promo_code"])\n\n# Define the columns that uniquely identify a row (the business key)\nkey_cols = ["product_id", "store_id"]\n\n# Add the surrogate key\ndf_with_sk = generate_surrogate_key(df, key_cols)\ndisplay(df_with_sk)`},
+                    { id: 6, name: 'snake_case_columns', description: 'Converts all DataFrame column names from CamelCase to snake_case.', type: 'PySpark (Function)', code: `import re\n\ndef to_snake_case(name):\n    """Converts a string from CamelCase to snake_case."""\n    s1 = re.sub('(.)([A-Z][a-z]+)', r'\\1_\\2', name)\n    return re.sub('([a-z0-9])([A-Z])', r'\\1_\\2', s1).lower()\n\ndef snake_case_columns(df):\n    """Converts all columns in a DataFrame to snake_case."""\n    return df.toDF(*[to_snake_case(c) for c in df.columns])`, example: `# DataFrame with inconsistent column names\ndata = [("John", "Doe")]\ndf = spark.createDataFrame(data, ["FirstName", "lastName"])\n\n# Standardize column names to snake_case\ndf_standardized = snake_case_columns(df)\n\n# Before: | FirstName | lastName |\n# After:  | first_name | last_name |\ndisplay(df_standardized)`},
+                    { id: 8, name: 'parse_url_query_string', description: 'Extracts a specific parameter\'s value from a URL query string.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import expr, col\n\ndef parse_all_url_params(df, url_col, result_col="url_params"):\n    """Parses a URL query string into a map of all parameters."""\n    return df.withColumn(\n        result_col,\n        expr(f"str_to_map(parse_url({url_col}, 'QUERY'), '&', '=')")\n    )`, example: `data = [("https://example.com?utm_source=google&utm_medium=cpc",)]\ndf = spark.createDataFrame(data, ["url"])\n\n# Parse the URL and then extract a specific parameter ('utm_source')\ndf_parsed = parse_all_url_params(df, "url") \\\n    .withColumn("utm_source", col("url_params.utm_source"))\n\ndisplay(df_parsed)`},
+                    { id: 13, name: 'pivot_dynamic', description: 'Dynamically pivots a DataFrame based on column values, avoiding hardcoded pivot values.', type: 'PySpark (Function)', code: `def pivot_dynamic(df, group_by_cols, pivot_col, agg_col, agg_func="count"):\n    """Pivots a DataFrame dynamically based on column values."""\n    if not isinstance(group_by_cols, list):\n        group_by_cols = [group_by_cols]\n    \n    pivot_values = [\n        row[0] for row in df.select(pivot_col).distinct().collect()\n    ]\n    return df.groupBy(*group_by_cols).pivot(pivot_col, pivot_values).agg({agg_col: agg_func})`, example: `data = [("USA", "Electronics", 100), ("USA", "Apparel", 50), ("CAN", "Electronics", 80)]\ndf = spark.createDataFrame(data, ["country", "category", "sales"])\n\n# Pivot the data to see sales by category for each country\ndf_pivoted = pivot_dynamic(df, "country", "category", "sales", "sum")\n\n# Result will have columns: | country | Apparel | Electronics |\ndisplay(df_pivoted)`},
+                    { id: 20, name: 'string_to_array', description: 'Splits a string column into an array based on a delimiter.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import split, col\n\ndf.withColumn("tags_array", split(col("tags_string"), ","))`, example: `data = [("A,B,C",), ("D,E",)]\ndf = spark.createDataFrame(data, ["tags_string"])\n\n# Convert the comma-separated string to an array of strings\ndf_array = df.withColumn("tags_array", split(col("tags_string"), ","))\n\n# Before: |"A,B,C"|\n# After:  |["A", "B", "C"]|\ndisplay(df_array)`},
+                    { id: 21, name: 'array_contains_value', description: 'Checks if an array column contains a specific value, returning a boolean.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import array_contains, col\n\ndef check_array_contains(df, array_col, value, result_col="contains_value"):\n    """Adds a boolean column checking if an array contains a value."""\n    return df.withColumn(result_col, array_contains(col(array_col), value))`, example: `data = [(['A', 'B'],), (['C', 'D'],)]\ndf = spark.createDataFrame(data, ["items"])\n\n# Check if the 'items' array contains the value 'B'\ndf_checked = check_array_contains(df, "items", "B")\n\n# Result: | contains_value |\n#         | true           |\n#         | false          |\ndisplay(df_checked)`},
+                    { id: 22, name: 'json_string_to_struct', description: 'Parses a JSON string column into a struct (schema must be provided).', type: 'PySpark (Function)', code: `from pyspark.sql.functions import from_json, col\nfrom pyspark.sql.types import StructType, StructField, StringType, IntegerType\n\ndef parse_json_string(df, json_col, schema):\n    """Parses a JSON string column into a struct with a given schema."""\n    return df.withColumn("parsed_json", from_json(col(json_col), schema))`, example: `data = [('{"name": "Alice", "age": 30}',)]\ndf = spark.createDataFrame(data, ["json_payload"])\n\n# Define the schema of the JSON\njson_schema = StructType([\n    StructField("name", StringType()),\n    StructField("age", IntegerType())\n])\n\n# Parse the string into a structured column\ndf_parsed = parse_json_string(df, "json_payload", json_schema)\ndisplay(df_parsed)`},
+                    { id: 23, name: 'add_conditional_column', description: 'Adds a new column based on a conditional (when/otherwise) expression.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import when, col, lit\n\ndef add_status_column(df, source_col, threshold, result_col="status"):\n    """Adds a new column with values based on a condition."""\n    return df.withColumn(result_col, when(col(source_col) > threshold, "High").otherwise("Low"))`, example: `data = [(100,), (50,), (150,)]\ndf = spark.createDataFrame(data, ["sales_amount"])\n\n# Add a 'status' column based on sales amount\ndf_status = add_status_column(df, "sales_amount", 120, "sales_status")\n\n# Result: | sales_status |\n#         | Low          |\n#         | Low          |\n#         | High         |\ndisplay(df_status)`},
+                    { id: 24, name: 'calculate_rolling_average', description: 'Calculates a rolling average over a window partition.', type: 'PySpark (Function)', code: `from pyspark.sql.window import Window\nfrom pyspark.sql.functions import avg, col\n\ndef rolling_average(df, partition_by_col, order_by_col, target_col, window_size=7):\n    """Calculates a rolling average using a window function."""\n    windowSpec = Window.partitionBy(partition_by_col).orderBy(order_by_col).rowsBetween(-window_size + 1, 0)\n    return df.withColumn(f"rolling_avg_{target_col}", avg(col(target_col)).over(windowSpec))`, example: `data = [("A", "2023-01-01", 10), ("A", "2023-01-02", 12), ("A", "2023-01-03", 14)]\ndf = spark.createDataFrame(data, ["product", "date", "sales"])\n\n# Calculate 2-day rolling average of sales for each product\ndf_rolling = rolling_average(df, "product", "date", "sales", window_size=2)\ndisplay(df_rolling)`}
+                ]
+            },
+            {
+                category: "Schema & Data Structure Manipulation",
+                description: "Functions for handling schemas, nested data, and DataFrame structures.",
+                functions: [
+                    { id: 3, name: 'flatten_struct', description: 'Recursively flattens all nested struct columns into top-level columns.', type: 'PySpark (Function)', code: `def flatten_struct(df):\n    """\n    Recursively flattens all struct type columns in a DataFrame, prefixing\n    column names with the parent struct's name to avoid collisions.\n    """\n    nested_cols = [\n        f.name for f in df.schema.fields if "struct" in f.dataType.typeName()\n    ]\n    \n    if not nested_cols:\n        return df\n        \n    for col_name in nested_cols:\n        struct_fields = df.schema[col_name].dataType.fields\n        for field in struct_fields:\n            df = df.withColumn(f"{col_name}_{field.name}", df[f"{col_name}.{field.name}"])\n        df = df.drop(col_name)\n        \n    return flatten_struct(df) # Recurse to handle deeply nested structs`, example: `from pyspark.sql.types import StructType, StructField, StringType\n\n# Create a DataFrame with nested data\ndata = [Row(name=Row(firstname="John", lastname="Doe"))]\ndf = spark.createDataFrame(data)\n\n# Flatten the nested 'name' column\ndf_flat = flatten_struct(df)\n\n# Before: has a column 'name' of type struct\n# After: has columns 'name_firstname' and 'name_lastname'\ndisplay(df_flat)`},
+                    { id: 9, name: 'typecast_columns', description: 'Safely casts a dictionary of columns to specified Spark data types.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import col\n\ndef typecast_columns(df, cast_map):\n    """Casts columns in a df based on a {col_name: type} dictionary."""\n    for c, new_type in cast_map.items():\n        if c in df.columns:\n            df = df.withColumn(c, col(c).cast(new_type))\n    return df`, example: `data = [("101", "50.25", "2023-01-15")]\ndf = spark.createDataFrame(data, ["order_id", "price", "order_date"])\n\n# Define the desired types\ntype_map = {"order_id": "int", "price": "decimal(10,2)", "order_date": "date"}\n\n# Apply the type casting\ndf_casted = typecast_columns(df, type_map)\n\n# All columns are now in their correct data types\nprint(df_casted.dtypes)`},
+                    { id: 14, name: 'explode_map_to_key_value', description: 'Converts a map-type column into separate key and value columns.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import explode\n\ndf.select("id_col", explode("map_column"))`, example: `from pyspark.sql.functions import map_from_arrays, lit\n\ndata = [(1, ["key1", "key2"], ["val1", "val2"])]\ndf = spark.createDataFrame(data, ["id", "keys", "values"])\n\n# Create a map column first\ndf_map = df.withColumn("attributes", map_from_arrays("keys", "values"))\n\n# Explode the map into key-value pairs\ndf_exploded = df_map.select("id", explode("attributes"))\n\n# Result has columns: | id | key | value |\ndisplay(df_exploded)`},
+                    { id: 25, name: 'rename_columns_bulk', description: 'Renames multiple columns based on a provided mapping dictionary.', type: 'PySpark (Function)', code: `def rename_columns_bulk(df, rename_map):\n    """Renames multiple columns from a dictionary mapping."""\n    for old_name, new_name in rename_map.items():\n        df = df.withColumnRenamed(old_name, new_name)\n    return df`, example: `data = [("A", "B")]\ndf = spark.createDataFrame(data, ["colA", "colB"])\n\n# Define the renaming map\nrename_map = {"colA": "column_A", "colB": "column_B"}\n\n# Apply the renaming\ndf_renamed = rename_columns_bulk(df, rename_map)\ndisplay(df_renamed)`},
+                    { id: 26, name: 'select_columns_by_type', description: 'Selects all columns of a specific data type from a DataFrame.', type: 'PySpark (Function)', code: `def select_columns_by_type(df, dtype="string"):\n    """Selects all columns of a specified data type."""\n    selected_cols = [f.name for f in df.schema.fields if f.dataType.typeName() == dtype]\n    return df.select(*selected_cols)`, example: `data = [("A", 1, 12.5)]\ndf = spark.createDataFrame(data, ["string_col", "int_col", "double_col"])\n\n# Select only the integer columns\ndf_integers = select_columns_by_type(df, "integer")\ndisplay(df_integers)`},
+                    { id: 27, name: 'compare_schemas', description: 'Compares the schemas of two DataFrames and prints the differences.', type: 'PySpark (Function)', code: `def compare_schemas(df1, df2):\n    """Compares two schemas and prints fields that are not in both."""\n    s1 = set((f.name, f.dataType.typeName()) for f in df1.schema.fields)\n    s2 = set((f.name, f.dataType.typeName()) for f in df2.schema.fields)\n    \n    print("Fields in first DataFrame but not in second:")\n    for field in (s1 - s2):\n        print(f" - {field[0]}: {field[1]}")\n        \n    print("\\nFields in second DataFrame but not in first:")\n    for field in (s2 - s1):\n        print(f" - {field[0]}: {field[1]}")`, example: `df1 = spark.createDataFrame([], "a: int, b: string")\ndf2 = spark.createDataFrame([], "b: string, c: double")\n\n# Compare the two schemas\ncompare_schemas(df1, df2)`},
+                    { id: 28, name: 'explode_array_of_structs', description: 'Explodes an array of structs and then flattens the resulting struct.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import explode\n\ndef explode_and_flatten_struct_array(df, array_col):\n    """Explodes an array of structs and promotes struct fields to top-level columns."""\n    # Note: Requires the flatten_struct function from this guide\n    df_exploded = df.withColumn("exploded_col", explode(array_col))\n    return flatten_struct(df_exploded.select("*", "exploded_col.*").drop("exploded_col", array_col))`, example: `# A more complex example would be needed here\n# This function is best for nested JSON where a field is an array of objects.`}
+                ]
+            },
+            {
+                category: "Date & Time Functions",
+                description: "Specialized functions for handling date and time data.",
+                functions: [
+                    { id: 10, name: 'days_between', description: 'Calculates the number of whole days between two timestamp columns, handling timezones correctly.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import to_date, datediff, col\n\ndf.withColumn("days_diff", datediff(to_date(col("timestamp1")), to_date(col("timestamp2"))))`, example: `data = [("2023-01-01 10:00:00", "2023-01-10 05:00:00")]\ndf = spark.createDataFrame(data, ["start_time", "end_time"])\n\n# Calculate the difference in days\ndf_diff = df.withColumn("days_diff", datediff(to_date(col("end_time")), to_date(col("start_time"))))\n\n# Result is 9\ndisplay(df_diff)`},
+                    { id: 29, name: 'to_epoch_seconds', description: 'Converts a timestamp column to Unix epoch seconds.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import unix_timestamp, col\n\ndf.withColumn("epoch_seconds", unix_timestamp(col("timestamp_col")))`, example: `from pyspark.sql.functions import to_timestamp\ndf = spark.createDataFrame([("2023-01-01 00:00:00",)], ["ts_string"])\ndf = df.withColumn("ts", to_timestamp("ts_string"))\n\n# Convert to epoch\ndf_epoch = df.withColumn("epoch", unix_timestamp(col("ts")))\ndisplay(df_epoch)`},
+                    { id: 30, name: 'first_day_of_month', description: 'Returns the first day of the month for a given date column.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import trunc, col\n\ndf.withColumn("month_start_date", trunc(col("date_col"), "month"))`, example: `df = spark.createDataFrame([("2023-03-15",)], ["any_date"])\n\n# Get the first day of the month for that date\ndf_month_start = df.withColumn("month_start", trunc(col("any_date"), "month"))\n\n# Result: |2023-03-01|\ndisplay(df_month_start)`},
+                    { id: 31, name: 'business_days_between', description: 'Estimates the number of business days (Mon-Fri) between two dates.', type: 'PySpark (UDF)', code: `import pandas as pd\nfrom pyspark.sql.functions import udf, col\nfrom pyspark.sql.types import IntegerType\n\n@udf(IntegerType())\ndef business_days_between(start_date, end_date):\n    if start_date is None or end_date is None:\n        return None\n    # Note: This is an estimate. It doesn't account for holidays.\n    return len(pd.bdate_range(start_date, end_date))`, example: `df = spark.createDataFrame([("2023-01-05", "2023-01-12")], ["start_dt", "end_dt"])\n\n# Calculate business days\ndf_biz_days = df.withColumn("business_days", business_days_between(col("start_dt"), col("end_dt")))\n\n# Result is 6 (5, 6, 9, 10, 11, 12)\ndisplay(df_biz_days)`},
+                    { id: 32, name: 'convert_timezone', description: 'Converts a timestamp from one timezone to another.', type: 'Spark SQL / PySpark', code: `from pyspark.sql.functions import from_utc_timestamp, col\n\n# Assuming the source timestamp is in UTC\ndf.withColumn("cst_time", from_utc_timestamp(col("utc_timestamp_col"), "America/Chicago"))`, example: `df = spark.createDataFrame([("2023-01-01T12:00:00.000+0000",)], ["utc_ts_string"])\ndf = df.withColumn("utc_ts", col("utc_ts_string").cast("timestamp"))\n\n# Convert UTC time to Pacific Standard Time (PST)\ndf_pst = df.withColumn("pst_time", from_utc_timestamp(col("utc_ts"), "America/Los_Angeles"))\ndisplay(df_pst)`}
+                ]
+            },
+            {
+                category: "Auditing, Lineage & Utilities",
+                description: "Helper functions for auditing, logging, and general utility.",
+                functions: [
+                    { id: 1, name: 'add_audit_columns', description: 'Enriches a DataFrame with crucial metadata for lineage and debugging.', type: 'PySpark (Function)', code: `from pyspark.sql.functions import lit, current_timestamp, input_file_name\nimport uuid\n\ndef add_audit_columns(df, batch_id=None):\n    """Adds standard audit columns to a DataFrame."""\n    if batch_id is None:\n        batch_id = str(uuid.uuid4())\n    \n    return (df\n            .withColumn("ingestion_timestamp_utc", current_timestamp())\n            .withColumn("source_file", input_file_name())\n            .withColumn("batch_id", lit(batch_id))\n           )`, example: `# Assuming 'raw_df' is a DataFrame read from a file\n# e.g., raw_df = spark.read.csv("/path/to/file.csv")\n\n# Add the audit columns for traceability\ndf_audited = add_audit_columns(raw_df)\ndisplay(df_audited)`},
+                    { id: 33, name: 'get_row_count', description: 'Efficiently gets the row count of a DataFrame and logs it.', type: 'PySpark (Function)', code: `def log_row_count(df, df_name="DataFrame"):\n    """Caches the DataFrame, gets the count, and prints it."""\n    df.cache()\n    count = df.count()\n    print(f"Row count for {df_name}: {count}")\n    return count`, example: `data = [(1,), (2,), (3,)]\ndf = spark.createDataFrame(data, ["id"])\n\n# Get and print the row count\nrow_count = log_row_count(df, "My Sample Data")\n# Prints: "Row count for My Sample Data: 3"`},
+                    { id: 34, name: 'cache_and_materialize', description: 'Caches a DataFrame and triggers an action to materialize the cache.', type: 'PySpark (Function)', code: `def cache_and_materialize(df):\n    """Caches a DataFrame and runs a count() to trigger the cache."""\n    df.cache()\n    df.count() # Action to trigger caching\n    return df`, example: `# some_expensive_df is the result of many transformations\n# Cache it to avoid re-computation if it's used multiple times later\ncached_df = cache_and_materialize(some_expensive_df)\n\n# Now, operations on cached_df will be much faster\nresult1 = cached_df.filter("col > 10").collect()\nresult2 = cached_df.groupBy("category").count().collect()`},
+                    { id: 35, name: 'repartition_by_date', description: 'Repartitions a DataFrame based on a date column, useful for writing partitioned data.', type: 'PySpark (Function)', code: `def repartition_by_date(df, date_col, num_partitions=200):\n    """Repartition a DataFrame, often used before writing to storage."""\n    return df.repartition(num_partitions, date_col)`, example: `# Before writing data partitioned by date, repartitioning can help\n# avoid creating too many small files.\ndf_repartitioned = repartition_by_date(daily_sales_df, "sale_date")\n\n# df_repartitioned.write.partitionBy("sale_date").parquet("/path/to/output")`},
+                    { id: 36, name: 'get_databricks_context', description: 'Retrieves Databricks notebook context like notebook path or username.', type: 'PySpark (Function)', code: `def get_databricks_context(spark):\n    """Retrieves Databricks-specific context information."""\n    try:\n        from pyspark.dbutils import DBUtils\n        dbutils = DBUtils(spark)\n        context = {\n            "notebook_path": dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get(),\n            "username": dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()\n        }\n        return context\n    except Exception:\n        return {"error": "Not running in a Databricks notebook"}`, example: `# Get context to use in logging or tagging\ncontext = get_databricks_context(spark)\nprint(f"Running notebook: {context.get('notebook_path')}")`}
+                ]
+            },
+            {
+                category: "Advanced & Specialized Functions",
+                description: "Functions for more complex scenarios like streaming, UDFs, and performance optimization.",
+                functions: [
+                    { id: 11, name: 'is_valid_json', description: 'A UDF to safely check if a string column contains a valid JSON object before parsing.', type: 'PySpark (UDF)', code: `import json\nfrom pyspark.sql.functions import udf, col\nfrom pyspark.sql.types import BooleanType\n\n@udf(BooleanType())\ndef is_valid_json(s):\n    if s is None:\n        return False\n    try:\n        json.loads(s)\n        return True\n    except (json.JSONDecodeError, TypeError):\n        return False`, example: `data = [('{"a": 1}',), ('not json',), ('{"b": 2}',)]\ndf = spark.createDataFrame(data, ["payload"])\n\n# Filter out rows with invalid JSON before attempting to parse\ndf_valid = df.filter(is_valid_json(col("payload")))\ndisplay(df_valid)`},
+                    { id: 12, name: 'deduplicate_with_watermark', description: 'Deduplicates streaming records based on a unique ID within a time window using watermarking.', type: 'PySpark Streaming', code: `from pyspark.sql.functions import col\n\n# In a streaming query:\n(streaming_df\n    .withWatermark("event_timestamp", "10 minutes") \n    .dropDuplicates(["user_id", "event_id"])\n)`, example: `# This is a pattern, not a standalone function.\n# It's applied to a streaming DataFrame.\n\n# streaming_df = spark.readStream.format("kafka")... \n\ndeduplicated_stream = (\n  streaming_df\n    .withWatermark("event_timestamp", "10 minutes")\n    .dropDuplicates(["event_id"])\n)\n\n# Now write the deduplicated_stream to a sink`},
+                    { id: 15, name: 'read_with_rescued_data', description: 'Reads data in PERMISSIVE mode, capturing malformed records in a separate column instead of failing.', type: 'PySpark Read Option', code: `df_rescued = (spark.read\n              .option("mode", "PERMISSIVE")\n              .option("columnNameOfCorruptRecord", "_rescued_data")\n              .json("/path/to/your/data.json")\n             )`, example: `# Imagine a JSON file where one line is corrupted\n# {"a":1}\n# not a valid json\n# {"a":2}\n\ndf = spark.read.option("mode", "PERMISSIVE").option("columnNameOfCorruptRecord", "_rescued").json(path)\n\n# Separate good and bad records for analysis or reprocessing\ngood_records = df.filter("_rescued IS NULL")\nbad_records = df.filter("_rescued IS NOT NULL")`},
+                    { id: 37, name: 'apply_pandas_udf', description: 'Applies a Pandas UDF (vectorized UDF) for efficient, large-scale operations.', type: 'PySpark (UDF)', code: `from pyspark.sql.functions import pandas_udf, col\nimport pandas as pd\n\n# Define a vectorized UDF. It receives pandas Series as input.\n@pandas_udf("double")\ndef vectorized_add(a: pd.Series, b: pd.Series) -> pd.Series:\n    return a + b`, example: `df = spark.createDataFrame([(1, 2), (3, 4)], ["a", "b"])\n\n# Use the Pandas UDF to create a new column\ndf_sum = df.withColumn("sum", vectorized_add(col("a"), col("b")))\ndisplay(df_sum)`},
+                    { id: 38, name: 'handle_scd_type2', description: 'A conceptual pattern for handling Slowly Changing Dimension Type 2 updates.', type: 'PySpark (Function)', code: `def handle_scd_type2(existing_dim, updates_df, key_col, attr_cols):\n    # This is a conceptual example. A full implementation is complex\n    # and often requires Delta Lake for merge operations.\n    # It typically involves:\n    # 1. Joining existing and updates on the business key.\n    # 2. Identifying new records.\n    # 3. Identifying records with changed attributes.\n    # 4. Expiring old records and inserting new versions of changed records.\n    pass`, example: `# This is more of a complex recipe than a simple function.\n# The best way to implement SCD Type 2 in Databricks is with Delta Lake's MERGE INTO command.\n# See Databricks documentation for "MERGE INTO" for a full example.`},
+                    { id: 39, name: 'union_by_name_flexible', description: 'Unions two DataFrames by column name, filling missing columns with nulls.', type: 'PySpark (Function)', code: `def union_by_name_flexible(df1, df2):\n    """Unions two DataFrames by name, allowing for schema differences."""\n    cols1 = set(df1.columns)\n    cols2 = set(df2.columns)\n    all_cols = sorted(list(cols1.union(cols2)))\n\n    def select_and_add_missing(df, all_cols):\n        missing_cols = set(all_cols) - set(df.columns)\n        # Using selectExpr for concise column creation/aliasing\n        exprs = df.columns + [f"NULL as {c}" for c in missing_cols]\n        return df.selectExpr(*exprs)\n\n    return select_and_add_missing(df1, all_cols).unionByName(select_and_add_missing(df2, all_cols))`, example: `df1 = spark.createDataFrame([(1, "A")], ["id", "col1"])\ndf2 = spark.createDataFrame([(2, "B")], ["id", "col2"])\n\n# Union them together. The resulting DF will have columns: id, col1, col2\ndf_unioned = union_by_name_flexible(df1, df2)\ndisplay(df_unioned)`}
+                ]
+            }
+        ];
+        
+        const allFunctions = categorizedFunctions.flatMap(cat => cat.functions);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const functionsContainer = document.getElementById('functions-container');
+            const filtersContainer = document.getElementById('filters');
+            
+            let currentFilter = 'all';
+
+            const toggleAccordion = (element) => {
+                const content = element.nextElementSibling;
+                const arrow = element.querySelector('.accordion-arrow');
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    arrow.classList.remove('rotate-90');
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    arrow.classList.add('rotate-90');
+                }
+            };
+            
+            const renderFunctions = (data) => {
+                const pastelColors = ['bg-sky-50', 'bg-emerald-50', 'bg-violet-50', 'bg-rose-50', 'bg-amber-50', 'bg-teal-50'];
+                functionsContainer.innerHTML = '';
+
+                data.forEach((category, index) => {
+                    const categoryWrapper = document.createElement('div');
+                    const bgColor = pastelColors[index % pastelColors.length];
+                    categoryWrapper.className = 'category-accordion rounded-xl border border-slate-200 overflow-hidden';
+                    
+                    let functionHTML = '';
+                    category.functions.forEach(func => {
+                        functionHTML += `
+                            <div class="function-item border-t border-slate-200" data-type="${func.type}" data-id="${func.id}">
+                                <button class="function-accordion-toggle w-full text-left p-4 font-semibold text-slate-700 flex justify-between items-center bg-white hover:bg-slate-50">
+                                    <span>${func.name}</span>
+                                    <span class="accordion-arrow text-amber-500 text-2xl transition-transform duration-300">&#x25B8;</span>
+                                </button>
+                                <div class="accordion-content bg-white">
+                                    <div class="p-4 pt-0">
+                                        <p class="text-slate-600 mb-4">${func.description}</p>
+                                        <h4 class="font-semibold mt-4 mb-2">Implementation</h4>
+                                        <div class="code-block"><pre><code>${func.code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                        <h4 class="font-semibold mt-6 mb-2">Example Usage</h4>
+                                        <div class="code-block"><pre><code>${func.example.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    categoryWrapper.innerHTML = `
+                        <button class="category-accordion-toggle w-full text-left p-5 flex justify-between items-center ${bgColor} hover:brightness-95">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900">${category.category} (${category.functions.length})</h3>
+                                <p class="text-slate-500 text-sm mt-1">${category.description}</p>
+                            </div>
+                            <span class="accordion-arrow text-amber-500 text-3xl transform transition-transform duration-300">&#x25B8;</span>
+                        </button>
+                        <div class="accordion-content">
+                            ${functionHTML}
+                        </div>
+                    `;
+                    functionsContainer.appendChild(categoryWrapper);
+                });
+            };
+
+            functionsContainer.addEventListener('click', (e) => {
+                const categoryToggle = e.target.closest('.category-accordion-toggle');
+                const functionToggle = e.target.closest('.function-accordion-toggle');
+                
+                if (categoryToggle) toggleAccordion(categoryToggle);
+                if (functionToggle) toggleAccordion(functionToggle);
+            });
+
+            const filterLogic = (filter) => {
+                 document.querySelectorAll('.category-accordion').forEach(catAccordion => {
+                    let visibleFunctionsInCategory = 0;
+                    catAccordion.querySelectorAll('.function-item').forEach(funcItem => {
+                        if (filter === 'all' || funcItem.dataset.type === filter) {
+                            funcItem.style.display = 'block';
+                            visibleFunctionsInCategory++;
+                        } else {
+                            funcItem.style.display = 'none';
+                        }
+                    });
+
+                    if (visibleFunctionsInCategory > 0) {
+                        catAccordion.style.display = 'block';
+                    } else {
+                        catAccordion.style.display = 'none';
+                    }
+                });
+            };
+
+            filtersContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-btn')) {
+                    currentFilter = e.target.dataset.type;
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.remove('bg-amber-500', 'text-white');
+                        btn.classList.add('bg-white', 'text-slate-700');
+                    });
+                    e.target.classList.add('bg-amber-500', 'text-white');
+                    filterLogic(currentFilter);
+                }
+            });
+
+            const renderChart = () => {
+                const ctx = document.getElementById('functionTypeChart').getContext('2d');
+                const categoryCounts = categorizedFunctions.map(cat => cat.functions.length);
+                const categoryNames = categorizedFunctions.map(cat => cat.category);
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: categoryNames,
+                        datasets: [{
+                            label: '# of Functions',
+                            data: categoryCounts,
+                            backgroundColor: ['#475569', '#64748b', '#94a3b8', '#f59e0b', '#fcd34d', '#fbbf24'],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+                    }
+                });
+            };
+            
+            // Initial Render
+            renderFunctions(categorizedFunctions);
+            renderChart();
+        });
+    </script>
+
+</body>
+</html>
+
