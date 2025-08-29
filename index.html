@@ -23,8 +23,8 @@
         .chart-container {
             position: relative;
             width: 100%;
-            height: 350px;
-            max-height: 400px;
+            height: 50vh; /* Responsive height */
+            max-height: 350px;
         }
         .code-block {
             background-color: #1e293b; /* slate-800 */
@@ -68,8 +68,8 @@
             <a href="./admin_panel.html" class="absolute top-0 right-0 text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors">
                 Admin Panel ➔
             </a>
-            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">Comprehensive ETL Functions for Databricks</h1>
-            <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">An interactive guide to over 35 essential custom functions, complete with implementation code and practical examples.</p>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900">Comprehensive ETL Functions for Databricks</h1>
+            <p class="mt-4 text-base sm:text-lg text-slate-600 max-w-3xl mx-auto">An interactive guide to over 35 essential custom functions, complete with implementation code and practical examples.</p>
         </header>
 
         <main>
@@ -83,11 +83,20 @@
                 </div>
             </section>
 
-            <section id="functions-explorer">
-                <h2 class="text-2xl font-bold text-center mb-4">Functions Explorer</h2>
-                <p class="text-center text-slate-600 mb-8">Use the filters to find specific functions, or browse the categories below. Click on any category or function to expand it.</p>
+            <section id="functions-explorer" class="bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-slate-200">
+                <h2 class="text-2xl font-bold text-center mb-2">Functions Explorer</h2>
+                <p class="text-center text-slate-600 mb-6">Search by name or description, use the filters, or browse the categories below.</p>
                 
-                <div id="filters" class="flex flex-wrap justify-center gap-2 mb-8">
+                <div class="relative mb-4">
+                    <input type="text" id="search-input" placeholder="Search functions..." class="w-full p-3 pl-10 border border-slate-300 rounded-full focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+                
+                <div id="filters" class="flex flex-wrap justify-center gap-2 mb-6">
                     <button class="filter-btn bg-amber-500 text-white py-2 px-4 rounded-full font-semibold shadow-sm" data-type="all">All</button>
                     <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark (Function)">PySpark (Function)</button>
                     <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="Spark SQL / PySpark">Spark SQL / PySpark</button>
@@ -96,8 +105,8 @@
                     <button class="filter-btn bg-white text-slate-700 py-2 px-4 rounded-full font-semibold border border-slate-300" data-type="PySpark Read Option">PySpark Read Option</button>
                 </div>
 
-                <div class="max-h-[75vh] overflow-y-auto functions-scrollbar pr-2 border border-slate-200 rounded-2xl bg-white shadow-md">
-                    <div id="functions-container" class="space-y-4 p-4">
+                <div class="max-h-[60vh] sm:max-h-[75vh] overflow-y-auto functions-scrollbar pr-2">
+                    <div id="functions-container" class="space-y-4">
                         <!-- Accordions will be injected here -->
                     </div>
                 </div>
@@ -324,4 +333,5 @@
 
 </body>
 </html>
+" and am asking a query about this. I want to add a copy to clipboard button in all the implementation section as well as example usages section and that has a better UX in all the devices. Also the search bar should be more creative with good styles, it should be in the center of the page.
 
