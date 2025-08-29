@@ -26,6 +26,9 @@
             height: 50vh; /* Responsive height */
             max-height: 350px;
         }
+        .code-block-wrapper {
+            position: relative;
+        }
         .code-block {
             background-color: #1e293b; /* slate-800 */
             color: #e2e8f0; /* slate-200 */
@@ -34,6 +37,23 @@
             overflow-x: auto;
             font-size: 0.875rem;
             line-height: 1.25rem;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #334155; /* slate-700 */
+            color: #94a3b8; /* slate-400 */
+            border: none;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .copy-btn:hover {
+            background-color: #475569; /* slate-600 */
+            color: #cbd5e1; /* slate-300 */
         }
         .accordion-content {
             max-height: 0;
@@ -84,15 +104,17 @@
             </section>
 
             <section id="functions-explorer" class="bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-slate-200">
-                <h2 class="text-2xl font-bold text-center mb-2">Functions Explorer</h2>
-                <p class="text-center text-slate-600 mb-6">Search by name or description, use the filters, or browse the categories below.</p>
-                
-                <div class="relative mb-4">
-                    <input type="text" id="search-input" placeholder="Search functions..." class="w-full p-3 pl-10 border border-slate-300 rounded-full focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
+                <div class="max-w-2xl mx-auto">
+                    <h2 class="text-2xl font-bold text-center mb-2">Functions Explorer</h2>
+                    <p class="text-center text-slate-600 mb-6">Search by name or description, use the filters, or browse the categories below.</p>
+                    
+                    <div class="relative mb-4">
+                        <input type="text" id="search-input" placeholder="Live search functions..." class="w-full p-3 pl-10 text-center border-2 border-slate-200 rounded-full focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-300 shadow-inner">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 
@@ -198,8 +220,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             const functionsContainer = document.getElementById('functions-container');
             const filtersContainer = document.getElementById('filters');
+            const searchInput = document.getElementById('search-input');
             
             let currentFilter = 'all';
+            let currentSearchTerm = '';
 
             const toggleAccordion = (element) => {
                 const content = element.nextElementSibling;
@@ -211,6 +235,32 @@
                     content.style.maxHeight = content.scrollHeight + "px";
                     arrow.classList.add('rotate-90');
                 }
+            };
+
+            const copyToClipboard = (button) => {
+                const codeBlock = button.parentElement.querySelector('pre');
+                const textToCopy = codeBlock.innerText;
+                
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    button.innerHTML = `
+                        <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                        Copied!
+                    `;
+                    setTimeout(() => {
+                        button.innerHTML = `
+                            <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            Copy
+                        `;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                }
+                document.body.removeChild(textArea);
             };
             
             const renderFunctions = (data) => {
@@ -225,7 +275,7 @@
                     let functionHTML = '';
                     category.functions.forEach(func => {
                         functionHTML += `
-                            <div class="function-item border-t border-slate-200" data-type="${func.type}" data-id="${func.id}">
+                            <div class="function-item border-t border-slate-200" data-type="${func.type}" data-name="${func.name.toLowerCase()}" data-desc="${func.description.toLowerCase()}" data-id="${func.id}">
                                 <button class="function-accordion-toggle w-full text-left p-4 font-semibold text-slate-700 flex justify-between items-center bg-white hover:bg-slate-50">
                                     <span>${func.name}</span>
                                     <span class="accordion-arrow text-amber-500 text-2xl transition-transform duration-300">&#x25B8;</span>
@@ -234,9 +284,21 @@
                                     <div class="p-4 pt-0">
                                         <p class="text-slate-600 mb-4">${func.description}</p>
                                         <h4 class="font-semibold mt-4 mb-2">Implementation</h4>
-                                        <div class="code-block"><pre><code>${func.code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                        <div class="code-block-wrapper">
+                                            <button class="copy-btn flex items-center">
+                                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                Copy
+                                            </button>
+                                            <div class="code-block"><pre><code>${func.code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                        </div>
                                         <h4 class="font-semibold mt-6 mb-2">Example Usage</h4>
-                                        <div class="code-block"><pre><code>${func.example.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                        <div class="code-block-wrapper">
+                                            <button class="copy-btn flex items-center">
+                                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                Copy
+                                            </button>
+                                            <div class="code-block"><pre><code>${func.example.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -262,16 +324,21 @@
             functionsContainer.addEventListener('click', (e) => {
                 const categoryToggle = e.target.closest('.category-accordion-toggle');
                 const functionToggle = e.target.closest('.function-accordion-toggle');
+                const copyBtn = e.target.closest('.copy-btn');
                 
                 if (categoryToggle) toggleAccordion(categoryToggle);
                 if (functionToggle) toggleAccordion(functionToggle);
+                if (copyBtn) copyToClipboard(copyBtn);
             });
 
-            const filterLogic = (filter) => {
+            const updateView = () => {
                  document.querySelectorAll('.category-accordion').forEach(catAccordion => {
                     let visibleFunctionsInCategory = 0;
                     catAccordion.querySelectorAll('.function-item').forEach(funcItem => {
-                        if (filter === 'all' || funcItem.dataset.type === filter) {
+                        const typeMatch = currentFilter === 'all' || funcItem.dataset.type === currentFilter;
+                        const searchMatch = currentSearchTerm === '' || funcItem.dataset.name.includes(currentSearchTerm) || funcItem.dataset.desc.includes(currentSearchTerm);
+
+                        if (typeMatch && searchMatch) {
                             funcItem.style.display = 'block';
                             visibleFunctionsInCategory++;
                         } else {
@@ -295,8 +362,13 @@
                         btn.classList.add('bg-white', 'text-slate-700');
                     });
                     e.target.classList.add('bg-amber-500', 'text-white');
-                    filterLogic(currentFilter);
+                    updateView();
                 }
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value.toLowerCase();
+                updateView();
             });
 
             const renderChart = () => {
@@ -333,5 +405,4 @@
 
 </body>
 </html>
-" and am asking a query about this. I want to add a copy to clipboard button in all the implementation section as well as example usages section and that has a better UX in all the devices. Also the search bar should be more creative with good styles, it should be in the center of the page.
 
